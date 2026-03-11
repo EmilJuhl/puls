@@ -1,6 +1,7 @@
 const TABS = [
   { key: 'leaderboard', icon: '🏆', label: 'Leaderboard' },
   { key: 'checkin',     icon: '✅', label: 'Tjek ind'    },
+  { key: 'kost',        icon: '🍽️', label: 'Kost'        },
   { key: 'profile',     icon: '👤', label: 'Profil'      },
 ]
 

@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import LoginPage from './pages/LoginPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import CheckinPage from './pages/CheckinPage'
+import KostPage from './pages/KostPage'
 import ProfilePage from './pages/ProfilePage'
 import BottomNav from './components/BottomNav'
 
@@ -64,6 +65,7 @@ export default function App() {
       <div className="page-content">
         {page === 'leaderboard' && <LeaderboardPage session={session} />}
         {page === 'checkin'     && <CheckinPage session={session} />}
+        {page === 'kost'        && <KostPage session={session} />}
         {page === 'profile'     && (
           <ProfilePage session={session} profile={profile} onSave={setProfile} />
         )}
