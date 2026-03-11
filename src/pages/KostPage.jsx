@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import AvatarDisplay from '../components/AvatarDisplay'
 
-// Supabase project URL (til Edge Function kald)
-const SUPABASE_URL = 'https://yskvxkhefpltgmyajqmt.supabase.co'
+const SUPABASE_URL  = 'https://yskvxkhefpltgmyajqmt.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlza3Z4a2hlZnBsdGdteWFqcW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjA4MDQsImV4cCI6MjA4ODYzNjgwNH0.GwZAUqQIOE0e9YxS7zko1h0cVvnLamiZtWTyzoqtseY'
 
 // --- Komprimér billede til ~800px via Canvas ---
 function compressImage(file, maxPx = 800) {
@@ -296,6 +296,7 @@ export default function KostPage({ session }) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON,
         },
         body: JSON.stringify({ image_base64: base64, date: today }),
       })
