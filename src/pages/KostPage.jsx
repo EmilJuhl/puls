@@ -300,9 +300,11 @@ export default function KostPage({ session }) {
         body: JSON.stringify({ image_base64: base64, date: today }),
       })
 
-      const json = await res.json()
+      let json
+      const rawText = await res.text()
+      try { json = JSON.parse(rawText) } catch { throw new Error('Serverfejl: ' + rawText.slice(0, 200)) }
       if (!res.ok || json.error) {
-        throw new Error(json.error ?? 'Ukendt fejl')
+        throw new Error(json.error ?? `HTTP ${res.status}`)
       }
 
       setLastResult(json)
