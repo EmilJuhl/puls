@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const TODAY = new Date().toISOString().split('T')[0]
+function getDateStr(daysAgo = 0) {
+  const d = new Date()
+  d.setDate(d.getDate() - daysAgo)
+  return d.toISOString().split('T')[0]
+}
 
 const DEFAULTS = {
   // Søvn
-  sleep_hours: 7.5,
+  sleep_hours: 9.5,
   sleep_consistent: false,
   // Fysik
   steps: 0,
@@ -38,22 +42,29 @@ const CAT_MAX = {
 }
 
 export default function CheckinPage({ session }) {
+  const [tab, setTab] = useState('idag')
   const [form, setForm] = useState(DEFAULTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [score, setScore] = useState(null)
   const [hasExisting, setHasExisting] = useState(false)
 
-  useEffect(() => {
-    loadTodayCheckin()
-  }, [])
+  const activeDate = getDateStr(tab === 'igaar' ? 1 : 0)
 
-  async function loadTodayCheckin() {
+  useEffect(() => {
+    setForm(DEFAULTS)
+    setScore(null)
+    setHasExisting(false)
+    setLoading(true)
+    loadCheckin(activeDate)
+  }, [tab])
+
+  async function loadCheckin(date) {
     const { data } = await supabase
       .from('daily_checkins')
       .select('*')
       .eq('user_id', session.user.id)
-      .eq('date', TODAY)
+      .eq('date', date)
       .maybeSingle()
 
     if (data) {
@@ -68,7 +79,7 @@ export default function CheckinPage({ session }) {
         .from('daily_scores')
         .select('*')
         .eq('user_id', session.user.id)
-        .eq('date', TODAY)
+        .eq('date', date)
         .maybeSingle()
       if (s) setScore(s)
     }
@@ -88,7 +99,7 @@ export default function CheckinPage({ session }) {
       .from('daily_checkins')
       .upsert({
         user_id: session.user.id,
-        date: TODAY,
+        date: activeDate,
         ...form,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,date' })
@@ -99,7 +110,7 @@ export default function CheckinPage({ session }) {
         .from('daily_scores')
         .select('*')
         .eq('user_id', session.user.id)
-        .eq('date', TODAY)
+        .eq('date', activeDate)
         .maybeSingle()
       if (s) {
         setScore(s)
@@ -117,15 +128,55 @@ export default function CheckinPage({ session }) {
     )
   }
 
-  const todayLabel = new Date().toLocaleDateString('da-DK', {
+  const dateObj = new Date(activeDate + 'T12:00:00')
+  const dateLabel = dateObj.toLocaleDateString('da-DK', {
     weekday: 'long', day: 'numeric', month: 'long',
   })
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Dagens check-in</h1>
-        <p className="page-subtitle" style={{ textTransform: 'capitalize' }}>{todayLabel}</p>
+        <h1 className="page-title">Check-in</h1>
+        {/* Tab-bar */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          marginTop: '12px',
+          background: 'var(--g50)',
+          borderRadius: '12px',
+          padding: '4px',
+        }}>
+          {[
+            { id: 'idag', label: 'I dag' },
+            { id: 'igaar', label: 'I går' },
+          ].map(t => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              style={{
+                flex: 1,
+                padding: '8px 0',
+                borderRadius: '9px',
+                fontSize: '14px',
+                fontWeight: 700,
+                background: tab === t.id ? 'var(--g700)' : 'transparent',
+                color: tab === t.id ? 'white' : 'var(--muted)',
+                transition: 'all 0.15s',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <p className="page-subtitle" style={{ textTransform: 'capitalize', marginTop: '8px' }}>
+          {dateLabel}
+        </p>
+        {tab === 'igaar' && (
+          <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>
+            Du redigerer gårsdagens check-in
+          </p>
+        )}
       </div>
 
       {score && <ScoreCard score={score} />}
@@ -141,6 +192,9 @@ export default function CheckinPage({ session }) {
             min={0} max={14} step={0.5}
             unit="t"
           />
+          <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '-6px' }}>
+            9-10t = 10p · 8-9t / 10-11t = 7p · 7-8t / 11-12t = 4p
+          </div>
           <ToggleRow
             label="Stod op inden for ±30 min af fast vækketid"
             value={form.sleep_consistent}
@@ -315,7 +369,6 @@ function ScoreCard({ score }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {cats.map(cat => {
           const val = score[cat.key] ?? 0
-          // Kan være negativ — clamp til 0 for progress bar, vis rød ved minus
           const pct = Math.max(0, Math.round((val / cat.max) * 100))
           const isNegative = val < 0
           return (
@@ -446,7 +499,6 @@ function Toggle({ value, onChange, danger = false }) {
   )
 }
 
-// Tre-knaps vælger til brushed_teeth (0 / 1 / 2 gange)
 function BrushedTeethSelector({ value, onChange }) {
   const options = [
     { val: 0, label: 'Ingen' },
